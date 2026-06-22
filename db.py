@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 import streamlit as st
 import psycopg2
 from psycopg2 import pool
@@ -10,6 +11,24 @@ import pandas as pd
 # =====================================================
 
 DB_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
+
+
+def normalize_db_url(url):
+
+    if not url:
+        return url
+
+    parsed = urlparse(url)
+    query = dict(parse_qsl(parsed.query))
+
+    if "sslmode" not in query:
+        query["sslmode"] = "require"
+
+    return urlunparse(
+        parsed._replace(
+            query=urlencode(query)
+        )
+    )
 
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
@@ -24,17 +43,30 @@ DB_CONFIG = {
 # CONNECTION POOL
 # =====================================================
 
-if DB_URL:
-    db_pool = pool.SimpleConnectionPool(1, 10, dsn=DB_URL)
-else:
-    db_pool = pool.SimpleConnectionPool(1, 10, **DB_CONFIG)
+db_pool = None
+
+
+def get_db_pool():
+    global db_pool
+
+    if db_pool is None:
+        if DB_URL:
+            db_pool = pool.SimpleConnectionPool(
+                1,
+                10,
+                dsn=normalize_db_url(DB_URL)
+            )
+        else:
+            db_pool = pool.SimpleConnectionPool(1, 10, **DB_CONFIG)
+
+    return db_pool
 
 # =====================================================
 # CONNECTION
 # =====================================================
 
 def get_connection():
-    return db_pool.get_connection()
+    return get_db_pool().getconn()
 
 # =====================================================
 # GENERIC DATABASE FUNCTIONS
@@ -58,7 +90,7 @@ def execute_query(query, params=None):
 
     finally:
         cursor.close()
-        conn.close()
+        get_db_pool().putconn(conn)
 
 
 def fetch_one(query, params=None):
@@ -76,7 +108,7 @@ def fetch_one(query, params=None):
 
     finally:
         cursor.close()
-        conn.close()
+        get_db_pool().putconn(conn)
 
 
 def fetch_all(query, params=None):
@@ -94,7 +126,7 @@ def fetch_all(query, params=None):
 
     finally:
         cursor.close()
-        conn.close()
+        get_db_pool().putconn(conn)
 
 
 def fetch_dataframe(query, params=None):
@@ -109,7 +141,7 @@ def fetch_dataframe(query, params=None):
         return pd.DataFrame()
 
     finally:
-        conn.close()
+        get_db_pool().putconn(conn)
 
 # =====================================================
 # DASHBOARD KPI FUNCTIONS

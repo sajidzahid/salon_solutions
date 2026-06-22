@@ -14,34 +14,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown("""
-<style>
-section[data-testid="stSidebarNav"] { display: none; }
-[data-testid="stSidebarNav"] { display: none; }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    section[data-testid="stSidebarNav"] { display: none; }
+    [data-testid="stSidebarNav"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 init_session()
 
-st.markdown("""
-<style>
-.main-header{
-    font-size:32px;
-    font-weight:bold;
-    color:#1f2937;
-}
-.kpi-card{
-    background-color:#ffffff;
-    padding:15px;
-    border-radius:10px;
-    box-shadow:0px 0px 5px #cccccc;
-}
-.sidebar-title{
-    font-size:22px;
-    font-weight:bold;
-}
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    .main-header{
+        font-size:32px;
+        font-weight:bold;
+        color:#1f2937;
+    }
+    .kpi-card{
+        background-color:#ffffff;
+        padding:15px;
+        border-radius:10px;
+        box-shadow:0px 0px 5px #cccccc;
+    }
+    .sidebar-title{
+        font-size:22px;
+        font-weight:bold;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 if not is_logged_in():
     login_screen()

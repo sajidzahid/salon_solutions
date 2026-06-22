@@ -30,6 +30,20 @@ def normalize_db_url(url):
         )
     )
 
+
+if not DB_URL and not all(
+    os.getenv(name)
+    for name in [
+        "DB_HOST",
+        "DB_USER",
+        "DB_PASSWORD",
+        "DB_NAME"
+    ]
+):
+    raise RuntimeError(
+        "DATABASE_URL is required for Railway, or provide DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME."
+    )
+
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "user": os.getenv("DB_USER", "postgres"),

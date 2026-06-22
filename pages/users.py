@@ -1,4 +1,5 @@
 import streamlit as st
+import bcrypt
 
 from db import (
     get_users,
@@ -91,10 +92,23 @@ def show_users():
                 "Edit User"
             )
 
+            branch_id = st.number_input(
+                "Branch ID",
+                min_value=1,
+                step=1,
+                value=int(u["branch_id"]) if u.get("branch_id") else 1
+            )
+
+            role_id = st.number_input(
+                "Role ID",
+                min_value=1,
+                step=1,
+                value=int(u["role_id"]) if u.get("role_id") else 1
+            )
+
             username = st.text_input(
                 "Username",
-                u["username"],
-                disabled=True
+                u["username"]
             )
 
             email = st.text_input(
@@ -116,6 +130,9 @@ def show_users():
 
                 update_user(
                     u["user_id"],
+                    branch_id,
+                    role_id,
+                    username,
                     email,
                     status
                 )
@@ -165,12 +182,17 @@ def show_users():
             "Add User"
         ):
 
+            password_hash = bcrypt.hashpw(
+                password.encode(),
+                bcrypt.gensalt()
+            ).decode()
+
             insert_user(
                 branch_id,
                 role_id,
                 username,
                 email,
-                password
+                password_hash
             )
 
             st.success(

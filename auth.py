@@ -1,4 +1,5 @@
 import streamlit as st
+import bcrypt
 from db import fetch_one
 
 # =====================================================
@@ -51,10 +52,17 @@ def login(username, password):
     if user["status"] != "Active":
         return False
 
-    # Plain Text Password Validation
-    # Change to bcrypt later if needed
+    stored_hash = user["password_hash"] or ""
 
-    if password != user["password_hash"]:
+    try:
+        password_matches = bcrypt.checkpw(
+            password.encode(),
+            stored_hash.encode()
+        )
+    except Exception:
+        password_matches = password == stored_hash
+
+    if not password_matches:
         return False
 
     st.session_state.logged_in = True

@@ -1,28 +1,33 @@
+import os
 import streamlit as st
-import mysql.connector
-from mysql.connector import pooling
+import psycopg2
+from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 import pandas as pd
 
 # =====================================================
 # DATABASE CONFIGURATION
 # =====================================================
 
+DB_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
+
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "12@threefour",
-    "database": "salon_solutions"
+    "host": os.getenv("DB_HOST", "localhost"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "dbname": os.getenv("DB_NAME", "postgres"),
+    "port": os.getenv("DB_PORT", "5432"),
+    "sslmode": os.getenv("DB_SSLMODE", "require")
 }
 
 # =====================================================
 # CONNECTION POOL
 # =====================================================
 
-db_pool = pooling.MySQLConnectionPool(
-    pool_name="salon_pool",
-    pool_size=10,
-    **DB_CONFIG
-)
+if DB_URL:
+    db_pool = pool.SimpleConnectionPool(1, 10, dsn=DB_URL)
+else:
+    db_pool = pool.SimpleConnectionPool(1, 10, **DB_CONFIG)
 
 # =====================================================
 # CONNECTION
@@ -59,7 +64,7 @@ def execute_query(query, params=None):
 def fetch_one(query, params=None):
 
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
         cursor.execute(query, params or ())
@@ -77,7 +82,7 @@ def fetch_one(query, params=None):
 def fetch_all(query, params=None):
 
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
         cursor.execute(query, params or ())
@@ -154,12 +159,9 @@ def get_today_sales():
 
     row = fetch_one("""
         SELECT
-            IFNULL(
-                SUM(grand_total),
-                0
-            ) AS total
+            COALESCE(SUM(grand_total), 0) AS total
         FROM bills
-        WHERE DATE(bill_date)=CURDATE()
+        WHERE bill_date::date = CURRENT_DATE
     """)
 
     return row["total"] if row else 0
@@ -170,7 +172,7 @@ def get_today_appointments():
     row = fetch_one("""
         SELECT COUNT(*) AS total
         FROM appointments
-        WHERE appointment_date=CURDATE()
+        WHERE appointment_date = CURRENT_DATE
     """)
 
     return row["total"] if row else 0
@@ -180,13 +182,13 @@ def monthly_sales_chart():
 
     query = """
     SELECT
-        MONTH(bill_date) month_no,
-        MONTHNAME(bill_date) month_name,
+        EXTRACT(MONTH FROM bill_date) AS month_no,
+        TO_CHAR(bill_date, 'Month') AS month_name,
         SUM(grand_total) sales
     FROM bills
     GROUP BY
-        MONTH(bill_date),
-        MONTHNAME(bill_date)
+        EXTRACT(MONTH FROM bill_date),
+        TO_CHAR(bill_date, 'Month')
     ORDER BY month_no
     """
 
@@ -874,7 +876,7 @@ def sales_report(
     query = """
     SELECT *
     FROM bills
-    WHERE DATE(bill_date)
+    WHERE bill_date::date
     BETWEEN %s AND %s
     ORDER BY bill_date DESC
     """

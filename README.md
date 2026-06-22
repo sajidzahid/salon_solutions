@@ -4,14 +4,14 @@ Final Project
 ## Run locally
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run app.py
 ```
 
 ## Deploy on Streamlit Community Cloud
 
 1. Push this repo to GitHub.
 2. In Streamlit Community Cloud, create a new app from the repo.
-3. Set the main file path to `streamlit_app.py`.
+3. Set the main file path to `app.py`.
 4. Add database secrets or environment variables for:
    - `DB_HOST`
    - `DB_USER`
@@ -20,8 +20,6 @@ streamlit run streamlit_app.py
    - `DB_PORT`
    - `DB_SSLMODE`
 5. Make sure the Supabase PostgreSQL database is reachable from Streamlit Cloud.
-
-The `app.py` file is only there to satisfy Vercel's Python entrypoint rule. The real UI runs from `streamlit_app.py`.
 
 ## Supabase setup
 
